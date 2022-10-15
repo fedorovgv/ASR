@@ -1,6 +1,8 @@
 import importlib
 from datetime import datetime
 
+import pandas as pd
+
 
 class TensorboardWriter:
     def __init__(self, log_dir, logger, enabled):
@@ -86,3 +88,9 @@ class TensorboardWriter:
                     )
                 )
             return attr
+
+    def add_table(self, table_name, table: pd.DataFrame, *args, **kwargs):
+        # TO-DO: fix this
+        for i in range(len(table)):
+            line = str(table.iloc[i])
+            self.writer.add_text(table_name, line)
