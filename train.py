@@ -24,16 +24,19 @@ np.random.seed(SEED)
 
 
 def main(config):
+    # logger provided by python
     logger = config.get_logger("train")
 
-    # text_encoder
+    # text_encoder (maps letters in ints)
     text_encoder = config.get_text_encoder()
 
-    # setup data_loader instances
+    # setup data_loader instances (get dataloaders)
     dataloaders = get_dataloaders(config, text_encoder)
 
-    # build model architecture, then print to console
-    model = config.init_obj(config["arch"], module_arch, n_class=len(text_encoder))
+    # build model architecture
+    # model = config.init_obj(config["arch"], module_arch, n_class=len(text_encoder))
+    model = config.init_obj(config["arch"], module_arch)
+    # print to console
     logger.info(model)
 
     # prepare for (multi-device) GPU training
@@ -49,8 +52,8 @@ def main(config):
         for metric_dict in config["metrics"]
     ]
 
-    # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for
-    # disabling scheduler
+    # build optimizer, learning rate scheduler. delete every
+    # line containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = config.init_obj(config["optimizer"], torch.optim, trainable_params)
     lr_scheduler = config.init_obj(config["lr_scheduler"], torch.optim.lr_scheduler, optimizer)
