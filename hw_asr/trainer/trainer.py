@@ -1,12 +1,13 @@
 import random
 from pathlib import Path
-from random import shuffle
 
 import PIL
 import pandas as pd
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
+from torch.nn.parallel.data_parallel import DataParallel
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
@@ -41,6 +42,7 @@ class Trainer(BaseTrainer):
         self.text_encoder = text_encoder
         self.config = config
         self.train_dataloader = dataloaders["train"]
+
         if len_epoch is None:
             # epoch-based training
             self.len_epoch = len(self.train_dataloader)
@@ -50,7 +52,7 @@ class Trainer(BaseTrainer):
             self.len_epoch = len_epoch
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
         self.lr_scheduler = lr_scheduler
-        self.log_step = 50
+        self.log_step = config["trainer"].get('log_step', 50)
 
         self.train_metrics = MetricTracker(
             "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
@@ -116,6 +118,7 @@ class Trainer(BaseTrainer):
                 )
                 self._log_predictions(**batch)
                 self._log_spectrogram(batch["spectrogram"])
+                self._log_audio(batch["audio"], self.config["preprocessing"].get('sample_rate'))
                 self._log_scalars(self.train_metrics)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
@@ -204,13 +207,18 @@ class Trainer(BaseTrainer):
             log_probs,
             log_probs_length,
             audio_path,
-            examples_to_log=10,
+            examples_to_log=5,
             *args,
             **kwargs,
     ):
-        # TODO: implement logging of beam search results
+        """
+        Calculate ctc decoded text and beam search decoded text.
+        """
         if self.writer is None:
             return
+        # randomly select indices for decoding
+        indices = np.random.choice(range(log_probs.size(0)), examples_to_log)
+        # don't want to change this logic
         argmax_inds = log_probs.cpu().argmax(-1).numpy()
         argmax_inds = [
             inds[: int(ind_len)]
@@ -219,26 +227,46 @@ class Trainer(BaseTrainer):
         argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
         argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
         tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
-        shuffle(tuples)
         rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
+        for ind in indices:
+            pred, target, raw_pred, path = tuples[ind]
             target = BaseTextEncoder.normalize_text(target)
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
 
-            rows[Path(audio_path).name] = {
+            rows[Path(path).name] = {
                 "target": target,
                 "raw prediction": raw_pred,
-                "predictions": pred,
+                "prediction": pred,
                 "wer": wer,
                 "cer": cer,
             }
+
+        # beam search decoding with lm model
+        if self.text_encoder.lm_available:
+            probs = torch.exp(log_probs)
+            for _, ind in enumerate(tqdm(indices, desc="beam_search", total=len(indices))):
+                if self.text_encoder.lm_available:
+                    hypothesis = self.text_encoder.lm_beam_search(
+                        probs[ind], log_probs_length[ind], beam_size=4
+                    )
+                    rows[Path(audio_path[ind]).name]["lm prediction"] = hypothesis
+                    wer = calc_wer(target, hypothesis) * 100
+                    cer = calc_cer(target, hypothesis) * 100
+
+                    rows[Path(audio_path[ind]).name]["lm wer"] = wer
+                    rows[Path(audio_path[ind]).name]["lm cer"] = cer
+
         self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
 
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch.cpu())
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram))
         self.writer.add_image("spectrogram", ToTensor()(image))
+
+    def _log_audio(self, audio_batch, sample_rate: int):
+        # TODO: add this
+        pass
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
