@@ -1,16 +1,20 @@
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 
 import torch
 from tqdm import tqdm
 
+import hw_asr.metric as module_metric
 import hw_asr.model as module_model
 from hw_asr.trainer import Trainer
 from hw_asr.utils import ROOT_PATH
 from hw_asr.utils.object_loading import get_dataloaders
 from hw_asr.utils.parse_config import ConfigParser
+from hw_asr.utils import MetricTracker
+from hw_asr.logger import get_visualizer
 
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
@@ -28,7 +32,7 @@ def main(config, out_file):
     dataloaders = get_dataloaders(config, text_encoder)
 
     # build model architecture
-    model = config.init_obj(config["arch"], module_model, n_class=len(text_encoder))
+    model = config.init_obj(config["arch"], module_model)
     logger.info(model)
 
     logger.info("Loading checkpoint: {} ...".format(config.resume))
@@ -38,11 +42,23 @@ def main(config, out_file):
         model = torch.nn.DataParallel(model)
     model.load_state_dict(state_dict)
 
+    metrics = [
+        config.init_obj(metric_dict, module_metric, text_encoder=text_encoder)
+        for metric_dict in config["metrics"]
+    ]
+    logger = config.get_logger("trainer", config["trainer"]["verbosity"])
+    writer = get_visualizer(config, logger, config["trainer"]["visualize"])
+    evaluation_metrics = MetricTracker(
+        "loss", *[m.name for m in metrics], writer=writer
+    )
+
     # prepare model for testing
     model = model.to(device)
     model.eval()
 
     results = []
+
+    evaluation_metrics.reset()
 
     with torch.no_grad():
         for batch_num, batch in enumerate(tqdm(dataloaders["test"])):
@@ -65,11 +81,23 @@ def main(config, out_file):
                     {
                         "ground_trurh": batch["text"][i],
                         "pred_text_argmax": text_encoder.ctc_decode(argmax.cpu().numpy()),
+                        "pred_test_lm_beam_search": text_encoder.lm_beam_search(
+                            batch["probs"][i], batch["log_probs_length"][i]
+                        ),
                         "pred_text_beam_search": text_encoder.ctc_beam_search(
-                            batch["probs"][i], batch["log_probs_length"][i], beam_size=100
-                        )[:10],
+                            batch["probs"][i], batch["log_probs_length"][i], beam_size=4,
+                        )[0],
                     }
                 )
+
+            for met in metrics:
+                evaluation_metrics.update(met.name, met(**batch))
+            for metric_name in evaluation_metrics.keys():
+                writer.add_scalar(f"{metric_name}", evaluation_metrics.avg(metric_name))
+
+    for metric_name in evaluation_metrics.keys():
+        logger.info(f'{metric_name} {evaluation_metrics.result()}')
+
     with Path(out_file).open("w") as f:
         json.dump(results, f, indent=2)
 
@@ -125,6 +153,12 @@ if __name__ == "__main__":
         type=int,
         help="Number of workers for test dataloader",
     )
+    args.add_argument(
+        "--libri",
+        default='dev-clean',
+        type=str,
+        help="libri speech dataset for test",
+    )
 
     args = args.parse_args()
 
@@ -165,7 +199,26 @@ if __name__ == "__main__":
             }
         }
 
+    # if `--libri` was provided, set libri dataset for testing
+    if args.libri:
+        config.config["data"] = {
+            "test": {
+                "batch_size": args.batch_size,
+                "num_workers": args.jobs,
+                "datasets": [
+                    {
+                        "type": "LibrispeechDataset",
+                        "args": {
+                            "part": args.libri
+                        },
+                    }
+                ],
+            }
+        }
+        logging.info(f'{args.libri} will be used for testing.')
+
     assert config.config.get("data", {}).get("test", None) is not None
+
     config["data"]["test"]["batch_size"] = args.batch_size
     config["data"]["test"]["n_jobs"] = args.jobs
 
