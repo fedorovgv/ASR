@@ -13,6 +13,7 @@ from hw_asr.logger import setup_logging
 from hw_asr.text_encoder import CTCCharTextEncoder
 from hw_asr.utils import read_json, write_json, ROOT_PATH
 
+logger = logging.getLogger(__name__)
 
 class ConfigParser:
     def __init__(self, config, resume=None, modification=None, run_id=None):
@@ -105,6 +106,7 @@ class ConfigParser:
             [k not in module_args for k in kwargs]
         ), "Overwriting kwargs given in config file is not allowed"
         module_args.update(kwargs)
+        # пиздец загнули
         return getattr(default_module, module_name)(*args, **module_args)
 
     def init_ftn(self, name, module, *args, **kwargs):
@@ -142,8 +144,22 @@ class ConfigParser:
             if "text_encoder" not in self._config:
                 self._text_encoder = CTCCharTextEncoder()
             else:
-                self._text_encoder = self.init_obj(self["text_encoder"],
-                                                   default_module=text_encoder_module)
+                if self._config["text_encoder"].get('use_beam_search_lm'):
+                    logger.info(
+                        f'Beam search with LM model will be used with '
+                        f'{self._config["text_encoder"]["args"]} arguments.'
+                    )
+                    self._text_encoder = CTCCharTextEncoder(
+                        alphabet=self._config["text_encoder"]["args"]["alphabet"],
+                        lm_model=self._config["text_encoder"]["args"]["lm_model"],
+                        alpha=self._config["text_encoder"]["args"]["alpha"],
+                        beta=self._config["text_encoder"]["args"]["beta"],
+                    )
+                else:
+                    self._text_encoder = self.init_obj(
+                        self["text_encoder"],
+                        default_module=text_encoder_module,
+                    )
         return self._text_encoder
 
     # setting read-only attributes
