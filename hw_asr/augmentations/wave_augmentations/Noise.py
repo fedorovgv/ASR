@@ -1,13 +1,13 @@
 import torch
 
-from torch_audiomentations import Gain as taGain
+from torch_audiomentations import AddColoredNoise
 
 
-class Gain(torch.nn.Module):
+class Noise(torch.nn.Module):
     """Fast version from torch_audiomentations."""
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self._aug = taGain(*args, **kwargs)
+        self._aug = AddColoredNoise(*args, **kwargs)
 
     def forward(self, audio):
         aug_audio = self._aug(audio.unsqueeze(1)).squeeze(1)
