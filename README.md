@@ -74,8 +74,8 @@ mkdir pre_trained && cd pre_trained
 
 # libri speech pre-trained language model
 mkdir -p lm_models/ && cd lm_models/
-wget https://www.openslr.org/resources/11/3-gram.pruned.1e-7.arpa.gz
-gzip -d 3-gram.pruned.1e-7.arpa.gz
+wget "https://www.dropbox.com/s/9sla5bg7q0mmv25/3-gram.arpa?dl=1"
+mv '3-gram.arpa?dl=1' 3-gram.arpa
 
 # deep speech checkpoint
 mkdir -p ../checkpoint && cd ../checkpoint/
@@ -85,7 +85,7 @@ wget "https://www.dropbox.com/s/5kkg1gsj5jxueks/config.json?dl=1"
 mv config.json\?dl\=1 config.json
 ```
 
-To reproduce model performance on the test-other: 
+To reproduce model performance on the test-other in repo do: 
 
 ```shell
 mkdir -p tmp && echo "tmp/" >> .gitignore

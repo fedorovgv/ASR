@@ -45,7 +45,7 @@ class CTCCharTextEncoder(CharTextEncoder):
             else:
                 lm_path = str(lm_path)
                 logger.info(f'We also have model in {lm_path}')
-            labels = [""] + list(self.alphabet)
+            labels = [''] + [ch.upper() for ch in self.alphabet]
             logger.info(f'Alphabet for ctcdecoder {labels}')
             self.lm_beam_decoder = build_ctcdecoder(
                 labels=labels,
@@ -108,7 +108,7 @@ class CTCCharTextEncoder(CharTextEncoder):
             self,
             probs: torch.tensor,
             probs_length: int,
-            beam_size: int = 4,
+            beam_size: int = 100,
     ):
         assert self.lm_available
 
@@ -117,8 +117,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         assert voc_size == len(self.ind2char)
 
         probs = probs[:probs_length, :].cpu().detach().numpy()
-        assert probs.shape[0] == probs_length
+        decoded_text = self.lm_beam_decoder.decode(probs, beam_width=beam_size)
 
-        decoded_text = self.lm_beam_decoder.decode(probs, beam_size)
-
+        decoded_text = decoded_text.lower()
         return decoded_text

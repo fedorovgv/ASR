@@ -97,8 +97,9 @@ def main(config, out_file):
             for metric_name in evaluation_metrics.keys():
                 writer.add_scalar(f"{metric_name}", evaluation_metrics.avg(metric_name))
 
+    metric_result = evaluation_metrics.result()
     for metric_name in evaluation_metrics.keys():
-        logger.info(f'{metric_name} {evaluation_metrics.result()}')
+        logger.info(f'{metric_name}: {metric_result[metric_name]}')
 
     with Path(out_file).open("w") as f:
         json.dump(results, f, indent=2)
