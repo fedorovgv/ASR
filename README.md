@@ -1,5 +1,7 @@
 # ASR
 
+--- 
+
 ## Installation guide
 
 ### Requirements
@@ -62,64 +64,59 @@ In some cases, it may need to add the path to the python path.
 export PYTHONPATH="${PYTHONPATH}:/<local_path_to_asr>/ASR/hw_asr/"
 ```
 
-## Before submitting
+--- 
 
-[//]: # (0&#41; Make sure your projects run on a new machine after complemeting the installation guide or by )
+## Pre-trained models
 
-[//]: # (   running it in docker container.)
-1) Search project for `# TODO: your code here` and implement missing functionality
+```shell
+mkdir <local_path_to_asr>/ASR/pre_trained
 
-[//]: # (2&#41; Make sure all tests work without errors)
+# libri speech pre-trained language model
+mkdir lm_models/ && cd lm_models/
+wget https://www.openslr.org/resources/11/3-gram.pruned.1e-7.arpa.gz
+gzip -d 3-gram.pruned.1e-7.arpa.gz
 
-[//]: # (   ```shell)
+# deep speech checkpoint
+cd ../ && mkdir checkpoints && cd checkpoints/
+wget "https://www.dropbox.com/s/u768yu1t6d3ucwe/checkpoint.pth?dl=1"
+wget "https://www.dropbox.com/s/nmy0xp2erk7qf8n/ckpt_config.json?dl=1"
+```
 
-[//]: # (   python -m unittest discover hw_asr/tests)
+To reproduce model performance on test-other: 
 
-[//]: # (   ```)
-3) Make sure `test.py` works fine and works as expected. You should create files `default_test_config.json` and your
-   installation guide should download your model checpoint and configs in `default_test_model/checkpoint.pth`
-   and `default_test_model/config.json`.
-   ```shell
-   python test.py \
-      -c default_test_config.json \
-      -r default_test_model/checkpoint.pth \
-      -t test_data \
-      -o test_result.json
-   ```
+```shell
+python test.py \
+      -r pre_trained/checkpoints/checkpoint.pth \
+      -o test_result.json \
+      --libri test-other
+```
 
-[//]: # (4&#41; Use `train.py` for training)
+---
+
+### Tests
+
+General tests:
+```shell
+python -m unittest discover hw_asr/tests
+```
+
+Model tests: 
+
+```shell
+# tmp is also in .gitignore
+mkdir tmp
+
+# model test
+python test.py \
+      -c hw_asr/tests/default_test_config.json \
+      -r pre_trained/checkpoints/checkpoint.pth \
+      -o tmp/test_result.json
+```
+
+---
 
 ## Credits
 
+
 This repository is based on a heavily modified fork
 of [pytorch-template](https://github.com/victoresque/pytorch-template) repository.
-
-[//]: # (## Docker)
-[//]: # ()
-[//]: # (You can use this project with docker. Quick start:)
-[//]: # ()
-[//]: # (```bash )
-[//]: # (docker build -t my_hw_asr_image . )
-[//]: # (docker run \)
-[//]: # (   --gpus '"device=0"' \)
-[//]: # (   -it --rm \)
-[//]: # (   -v /path/to/local/storage/dir:/repos/asr_project_template/data/datasets \)
-[//]: # (   -e WANDB_API_KEY=<your_wandb_api_key> \)
-[//]: # (	my_hw_asr_image python -m unittest )
-[//]: # (```)
-[//]: # ()
-[//]: # (Notes:)
-[//]: # ()
-[//]: # (* `-v /out/of/container/path:/inside/container/path` -- bind mount a path, so you wouldn't have to download datasets at)
-[//]: # (  the start of every docker run.)
-[//]: # (* `-e WANDB_API_KEY=<your_wandb_api_key>` -- set envvar for wandb &#40;if you want to use it&#41;. You can find your API key)
-[//]: # (  here: https://wandb.ai/authorize)
-[//]: # ()
-[//]: # (## TODO)
-[//]: # ()
-[//]: # (These barebones can use more tests. We highly encourage students to create pull requests to add more tests / new)
-[//]: # (functionality. Current demands:)
-[//]: # ()
-[//]: # (* Tests for beam search)
-[//]: # (* README section to describe folders)
-[//]: # (* Notebook to show how to work with `ConfigParser` and `config_parser.init_obj&#40;...&#41;`)
