@@ -44,9 +44,9 @@ Install virtual environment in repository.
 ```shell
 git clone https://github.com/fedorovgv/ASR
 
-cd <local_path_to_asr>/ASR
-~/.pyenv/versions/PYTHON_VERSION/bin/python -m venv venv_asr
-source venv_asr/bin/activate
+cd <local_path_to_asr>/
+~/.pyenv/versions/PYTHON_VERSION/bin/python -m venv VENV_NAME
+source VENV_NAME/bin/activate
 
 pip install -r ./requirements.txt
 ```
@@ -55,13 +55,13 @@ pip install -r ./requirements.txt
 
 ```shell
 git clone https://github.com/fedorovgv/ASR
-pip install -r ./requirements.txt
+pip install -r requirements.txt
 ```
 
 In some cases, it may need to add the path to the python path.
 
 ```shell
-export PYTHONPATH="${PYTHONPATH}:/<local_path_to_asr>/ASR/hw_asr/"
+export PYTHONPATH="${PYTHONPATH}:/<local_path_to_asr>/hw_asr/"
 ```
 
 --- 
@@ -69,7 +69,7 @@ export PYTHONPATH="${PYTHONPATH}:/<local_path_to_asr>/ASR/hw_asr/"
 ## Pre-trained models
 
 ```shell
-mkdir <local_path_to_asr>/ASR/pre_trained
+mkdir <local_path_to_asr>/pre_trained && cd pre_trained
 
 # libri speech pre-trained language model
 mkdir lm_models/ && cd lm_models/
@@ -79,15 +79,18 @@ gzip -d 3-gram.pruned.1e-7.arpa.gz
 # deep speech checkpoint
 cd ../ && mkdir checkpoints && cd checkpoints/
 wget "https://www.dropbox.com/s/u768yu1t6d3ucwe/checkpoint.pth?dl=1"
+mv 'checkpoint.pth?dl=1' checkpoint.pth
 wget "https://www.dropbox.com/s/nmy0xp2erk7qf8n/ckpt_config.json?dl=1"
+mv ckpt_config.json\?dl\=1 ckpt_config.json
 ```
 
-To reproduce model performance on test-other: 
+To reproduce model performance on the test-other: 
 
 ```shell
+mkdir -p tmp && echo "tmp/" >> .gitignore
 python test.py \
       -r pre_trained/checkpoints/checkpoint.pth \
-      -o test_result.json \
+      -o tmp/test_result.json \
       --libri test-other
 ```
 
@@ -100,11 +103,10 @@ General tests:
 python -m unittest discover hw_asr/tests
 ```
 
-Model tests:  ??? 
+Model tests:
 
 ```shell
-# tmp is also in .gitignore
-mkdir tmp
+mkdir -p tmp && echo "tmp/" >> .gitignore
 
 # model test
 python test.py \
@@ -114,6 +116,96 @@ python test.py \
 ```
 
 ---
+
+## Some features
+
+### Language Model
+
+You can load libri speech lm models manually from [libri](http://www.openslr.org/11/) site or do
+it automatically by selecting libri model name from available model list:
+
+```shell
+3-gram.arpa
+3-gram.pruned.1e-7.arpa
+3-gram.pruned.3e-7.arpa
+```
+
+and passing it into config:
+
+```json lines
+"text_encoder": {
+    "type": "CTCCharTextEncoder",
+    "args": {
+        "alphabet" : null,
+        "lm_model" : MODEL_NAME,
+        "alpha" : ALPHA,
+        "beta" : BETA
+    }
+}
+```
+
+If you use lm model it is possible to evaluate wer metric by beam search with 
+lm:
+
+```shell
+"metrics": [
+        {
+            "type": "LMWERMetric",
+            "args": {
+                "name": "WER LM"
+            }
+        },
+        ...
+    ],
+```
+
+### Augmentation
+
+#### Available
+
+Now it is available 
+
+```shell
+wave augment
+  Noise
+  Gain
+ 
+spec augment
+  TimeMasking
+  FrequencyMasking
+```
+
+#### Random apply 
+
+You can transfer the probability of using augmentation via config with `random_apply_proba`
+parameter like:
+
+```shell
+"augmentations": {
+        "wave": [
+            {
+                "type": "Noise",
+                "random_apply_proba": 0.4,
+                "args": {
+                    "sample_rate": 16000
+                }
+            },
+            {
+                "type": "Gain",
+                "args": {
+                    "min_gain_in_db": -10,
+                    "max_gain_in_db": 10,
+                    "sample_rate": 16000
+                }
+            }
+        ],
+        ...
+```
+
+In the example above, the Noise will be used with a probability of 0.4 and the
+Gain will be used all times.
+
+--- 
 
 ## Credits
 
