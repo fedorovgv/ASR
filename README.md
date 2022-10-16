@@ -77,11 +77,11 @@ wget https://www.openslr.org/resources/11/3-gram.pruned.1e-7.arpa.gz
 gzip -d 3-gram.pruned.1e-7.arpa.gz
 
 # deep speech checkpoint
-cd ../ && mkdir checkpoints && cd checkpoints/
+cd ../ && mkdir checkpoint && cd checkpoint/
 wget "https://www.dropbox.com/s/u768yu1t6d3ucwe/checkpoint.pth?dl=1"
 mv 'checkpoint.pth?dl=1' checkpoint.pth
-wget "https://www.dropbox.com/s/nmy0xp2erk7qf8n/ckpt_config.json?dl=1"
-mv ckpt_config.json\?dl\=1 ckpt_config.json
+wget "https://www.dropbox.com/s/nkiuyu6ezugzopu/config.json?dl=1"
+mv config.json\?dl\=1 config.json
 ```
 
 To reproduce model performance on the test-other: 
@@ -89,7 +89,7 @@ To reproduce model performance on the test-other:
 ```shell
 mkdir -p tmp && echo "tmp/" >> .gitignore
 python test.py \
-      -r pre_trained/checkpoints/checkpoint.pth \
+      -r pre_trained/checkpoint/checkpoint.pth \
       -o tmp/test_result.json \
       --libri test-other
 ```
@@ -101,18 +101,6 @@ python test.py \
 General tests:
 ```shell
 python -m unittest discover hw_asr/tests
-```
-
-Model tests:
-
-```shell
-mkdir -p tmp && echo "tmp/" >> .gitignore
-
-# model test
-python test.py \
-      -c hw_asr/configs/one_batch_test_deepspeech.json \
-      -r pre_trained/checkpoints/checkpoint.pth \
-      -o tmp/test_result.json
 ```
 
 ---

@@ -34,7 +34,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         self.lm_available = False
         if lm_model:
             if data_dir is None:
-                data_dir = ROOT_PATH / "data" / "lm_models"
+                data_dir = ROOT_PATH / "hw_asr" / "pre_trained" / "lm_models"
                 data_dir.mkdir(exist_ok=True, parents=True)
             lm_path = data_dir / lm_model
             if not lm_path.exists():
