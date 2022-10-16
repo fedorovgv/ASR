@@ -1,3 +1,4 @@
+import logging
 from typing import List, NamedTuple, Optional
 from collections import defaultdict
 
@@ -8,6 +9,8 @@ from pyctcdecode import build_ctcdecoder
 from hw_asr.utils import ROOT_PATH
 from hw_asr.text_encoder.language_model import load_model
 from .char_text_encoder import CharTextEncoder
+
+logger = logging.getLogger(__name__)
 
 
 class Hypothesis(NamedTuple):
@@ -41,7 +44,9 @@ class CTCCharTextEncoder(CharTextEncoder):
                 lm_path = load_model(data_dir, lm_model)
             else:
                 lm_path = str(lm_path)
+                logger.info(f'We also have model in {lm_path}')
             labels = [""] + list(self.alphabet)
+            logger.info(f'Alphabet for ctcdecoder {labels}')
             self.lm_beam_decoder = build_ctcdecoder(
                 labels=labels,
                 kenlm_model_path=lm_path,
@@ -105,6 +110,8 @@ class CTCCharTextEncoder(CharTextEncoder):
             probs_length: int,
             beam_size: int = 4,
     ):
+        assert self.lm_available
+
         assert len(probs.shape) == 2
         char_length, voc_size = probs.shape
         assert voc_size == len(self.ind2char)
