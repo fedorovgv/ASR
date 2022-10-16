@@ -95,6 +95,10 @@ python test.py \
       --libri test-other
 ```
 
+| 	               | wer argmax	 | cer argmax	 | wer beam cearch + lm 	 |
+|-----------------|------------|-------------|------------------------|
+| 	**test-other** | 	 0.28211391         | 	 0.1049535411          | 	0.1929986279          |
+
 ---
 
 ## Tests
