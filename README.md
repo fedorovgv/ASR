@@ -79,9 +79,9 @@ mv '3-gram.arpa?dl=1' 3-gram.arpa
 
 # deep speech checkpoint
 mkdir -p ../checkpoint && cd ../checkpoint/
-wget "https://www.dropbox.com/s/u768yu1t6d3ucwe/checkpoint.pth?dl=1"
+wget "https://www.dropbox.com/s/pfxgw812ye1q8be/checkpoint.pth?dl=1"
 mv 'checkpoint.pth?dl=1' checkpoint.pth
-wget "https://www.dropbox.com/s/5kkg1gsj5jxueks/config.json?dl=1"
+wget "https://www.dropbox.com/s/r6ru5jq4ypjsanc/config.json?dl=1"
 mv config.json\?dl\=1 config.json
 ```
 

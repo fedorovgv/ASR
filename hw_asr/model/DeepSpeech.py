@@ -82,6 +82,7 @@ class DeepSpeech(BaseModel):
             if i % 3 == 0:
                 input_length = torch.div(
                     (input_length + 2 * module.padding[dim] - module.dilation[dim] * (module.kernel_size[dim] - 1) - 1),
-                    module.stride[dim]
+                    module.stride[dim],
+                    rounding_mode="trunc",
                 ) + 1
         return input_length
