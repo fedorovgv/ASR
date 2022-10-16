@@ -93,9 +93,9 @@ class TensorboardWriter:
     def add_table(self, table_name, table: pd.DataFrame, *args, **kwargs):
         ind = np.random.randint(0, len(table), 5)
         for i in ind:
-            for tag in ['target', 'raw prediction', 'predictions', 'wer', 'cer']:
+            for tag in ['target', 'raw prediction', 'prediction', 'wer', 'cer']:
                 self.writer.add_text(
-                    tag=table_name + tag,
-                    line=str(table[tag].iloc[i]),
-                    global_step=self.step,
+                    table_name + tag,
+                    str(table[tag].iloc[i]),
+                    self.step,
                 )
