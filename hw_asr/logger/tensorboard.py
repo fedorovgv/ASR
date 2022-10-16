@@ -1,6 +1,7 @@
 import importlib
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 
 
@@ -90,7 +91,11 @@ class TensorboardWriter:
             return attr
 
     def add_table(self, table_name, table: pd.DataFrame, *args, **kwargs):
-        # TO-DO: fix this
-        for i in range(len(table)):
-            line = str(table.iloc[i])
-            self.writer.add_text(table_name, line)
+        ind = np.random.randint(0, len(table), 5)
+        for i in ind:
+            for tag in ['target', 'raw prediction', 'predictions', 'wer', 'cer']:
+                self.writer.add_text(
+                    tag=table_name + tag,
+                    line=str(table[tag].iloc[i]),
+                    global_step=self.step,
+                )

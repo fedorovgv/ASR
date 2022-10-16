@@ -265,8 +265,7 @@ class Trainer(BaseTrainer):
         self.writer.add_image("spectrogram", ToTensor()(image))
 
     def _log_audio(self, audio_batch, sample_rate: int):
-        # TODO: add this
-        pass
+        self.writet.add_audio("wav", torch.tensor(audio_batch))
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

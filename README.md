@@ -100,7 +100,7 @@ General tests:
 python -m unittest discover hw_asr/tests
 ```
 
-Model tests: 
+Model tests:  ??? 
 
 ```shell
 # tmp is also in .gitignore
@@ -108,7 +108,7 @@ mkdir tmp
 
 # model test
 python test.py \
-      -c hw_asr/tests/default_test_config.json \
+      -c hw_asr/configs/one_batch_test_deepspeech.json \
       -r pre_trained/checkpoints/checkpoint.pth \
       -o tmp/test_result.json
 ```
