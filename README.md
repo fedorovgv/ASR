@@ -54,8 +54,8 @@ pip install -r ./requirements.txt
 #### without pyenv
 
 ```shell
-git clone https://github.com/fedorovgv/ASR
-pip install -r requirements.txt
+git clone https://github.com/fedorovgv/ASR 
+cd ASR && pip install -r requirements.txt
 ```
 
 In some cases, it may need to add the path to the python path.
@@ -69,18 +69,19 @@ export PYTHONPATH="${PYTHONPATH}:/<local_path_to_asr>/hw_asr/"
 ## Pre-trained models
 
 ```shell
-mkdir <local_path_to_asr>/pre_trained && cd pre_trained
+cd <local_path_to_asr>/
+mkdir pre_trained && cd pre_trained
 
 # libri speech pre-trained language model
-mkdir lm_models/ && cd lm_models/
+mkdir -p lm_models/ && cd lm_models/
 wget https://www.openslr.org/resources/11/3-gram.pruned.1e-7.arpa.gz
 gzip -d 3-gram.pruned.1e-7.arpa.gz
 
 # deep speech checkpoint
-cd ../ && mkdir checkpoint && cd checkpoint/
+mkdir -p ../checkpoint && cd ../checkpoint/
 wget "https://www.dropbox.com/s/u768yu1t6d3ucwe/checkpoint.pth?dl=1"
 mv 'checkpoint.pth?dl=1' checkpoint.pth
-wget "https://www.dropbox.com/s/nkiuyu6ezugzopu/config.json?dl=1"
+wget "https://www.dropbox.com/s/5kkg1gsj5jxueks/config.json?dl=1"
 mv config.json\?dl\=1 config.json
 ```
 

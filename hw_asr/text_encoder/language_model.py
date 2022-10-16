@@ -19,8 +19,10 @@ def load_model(lm_dir: Path, lm_model: str):
     assert lm_model in AVAILABLE_MODELS
 
     lm_gzip_path = lm_model + '.gz'
-
-    if not os.path.exists(lm_gzip_path):
+    print(f'LM MODEL: {lm_model}  == ? 3-gram.pruned.1e-7.arpa, {os.path.exists(lm_model)}')
+    if os.path.exists(lm_model):
+        logger.info(f'We also have language model in {lm_dir}')
+    else:
         logger.info(f'Downloading language model in {lm_dir}')
         lm_url = 'http://www.openslr.org/resources/11/' + lm_gzip_path
         download_file(lm_url, lm_dir / lm_model)
